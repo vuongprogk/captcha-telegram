@@ -1,16 +1,18 @@
 import os
-import numpy as np
-import cv2
 import string
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
-from tensorflow.keras.optimizers import Adam
+
+import cv2
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelBinarizer
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout, Reshape
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
 
 # Characters used in CAPTCHA
 characters = string.ascii_uppercase + string.digits
 dataset_dir = "captcha_dataset"
+
 
 # Function to encode CAPTCHA text into one-hot vectors
 def encode_text(text):
@@ -39,6 +41,9 @@ def load_captcha_dataset(dataset_dir):
     X = np.array(images).reshape(-1, 80, 200, 1)  # Reshape to (height, width, channels)
     y = np.array(labels)
 
+    # Reshape labels to match output shape: (batch_size, num_characters, num_classes)
+    y = y.reshape(-1, 5, 36)  # For 5 characters and 36 possible classes per character
+
     return X, y
 
 
@@ -59,7 +64,13 @@ def build_model(input_shape, num_characters, num_classes):
     model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_characters * num_classes, activation='softmax'))  # Output for each character
+
+    # Output layer for each character (num_characters x num_classes)
+    model.add(Dense(num_characters * num_classes, activation='softmax'))
+
+    # Reshape output to (batch_size, num_characters, num_classes)
+    model.add(Reshape((num_characters, num_classes)))
+
     model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
