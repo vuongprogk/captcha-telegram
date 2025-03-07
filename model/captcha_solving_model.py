@@ -14,11 +14,10 @@ characters = string.ascii_uppercase + string.digits
 dataset_dir = "captcha_dataset"
 
 
-# Function to encode CAPTCHA text into one-hot vectors
+# Function to encode CAPTCHA text into one-hot vectors (correctly shaped)
 def encode_text(text):
     lb = LabelBinarizer().fit(list(characters))
-    return lb.transform(list(text))
-
+    return lb.transform(list(text))  # Returns a (num_characters, num_classes) matrix
 
 # Load and preprocess CAPTCHA dataset
 def load_captcha_dataset(dataset_dir):
@@ -41,10 +40,11 @@ def load_captcha_dataset(dataset_dir):
     X = np.array(images).reshape(-1, 80, 200, 1)  # Reshape to (height, width, channels)
     y = np.array(labels)
 
-    # Reshape labels to match output shape: (batch_size, num_characters, num_classes)
-    y = y.reshape(-1, 5, 36)  # For 5 characters and 36 possible classes per character
+    # Ensure y has the correct shape: (num_samples, num_characters, num_classes)
+    y = np.array([encode_text(label) for label in labels])
 
     return X, y
+
 
 
 # Load dataset
